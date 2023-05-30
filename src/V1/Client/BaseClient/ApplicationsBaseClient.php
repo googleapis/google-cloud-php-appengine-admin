@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright 2021 Google LLC
+ * Copyright 2023 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,13 @@
  * Updates to the above are reflected here through a refresh process.
  */
 
-namespace Google\Cloud\AppEngine\V1\Gapic;
+namespace Google\Cloud\AppEngine\V1\Client\BaseClient;
 
 use Google\ApiCore\ApiException;
 use Google\ApiCore\CredentialsWrapper;
 use Google\ApiCore\GapicClientTrait;
 use Google\ApiCore\LongRunning\OperationsClient;
 use Google\ApiCore\OperationResponse;
-use Google\ApiCore\RequestParamsHeaderDescriptor;
 use Google\ApiCore\RetrySettings;
 use Google\ApiCore\Transport\TransportInterface;
 use Google\ApiCore\ValidationException;
@@ -40,63 +39,40 @@ use Google\Cloud\AppEngine\V1\GetApplicationRequest;
 use Google\Cloud\AppEngine\V1\RepairApplicationRequest;
 use Google\Cloud\AppEngine\V1\UpdateApplicationRequest;
 use Google\LongRunning\Operation;
-use Google\Protobuf\FieldMask;
+use GuzzleHttp\Promise\PromiseInterface;
 
 /**
  * Service Description: Manages App Engine applications.
  *
  * This class provides the ability to make remote calls to the backing service through method
- * calls that map to API methods. Sample code to get started:
+ * calls that map to API methods.
  *
- * ```
- * $applicationsClient = new ApplicationsClient();
- * try {
- *     $operationResponse = $applicationsClient->createApplication();
- *     $operationResponse->pollUntilComplete();
- *     if ($operationResponse->operationSucceeded()) {
- *         $result = $operationResponse->getResult();
- *         // doSomethingWith($result)
- *     } else {
- *         $error = $operationResponse->getError();
- *         // handleError($error)
- *     }
- *     // Alternatively:
- *     // start the operation, keep the operation name, and resume later
- *     $operationResponse = $applicationsClient->createApplication();
- *     $operationName = $operationResponse->getName();
- *     // ... do other work
- *     $newOperationResponse = $applicationsClient->resumeOperation($operationName, 'createApplication');
- *     while (!$newOperationResponse->isDone()) {
- *         // ... do other work
- *         $newOperationResponse->reload();
- *     }
- *     if ($newOperationResponse->operationSucceeded()) {
- *         $result = $newOperationResponse->getResult();
- *         // doSomethingWith($result)
- *     } else {
- *         $error = $newOperationResponse->getError();
- *         // handleError($error)
- *     }
- * } finally {
- *     $applicationsClient->close();
- * }
- * ```
+ * This class is currently experimental and may be subject to changes.
+ *
+ * @experimental
+ *
+ * @internal
+ *
+ * @method PromiseInterface createApplicationAsync(CreateApplicationRequest $request, array $optionalArgs = [])
+ * @method PromiseInterface getApplicationAsync(GetApplicationRequest $request, array $optionalArgs = [])
+ * @method PromiseInterface repairApplicationAsync(RepairApplicationRequest $request, array $optionalArgs = [])
+ * @method PromiseInterface updateApplicationAsync(UpdateApplicationRequest $request, array $optionalArgs = [])
  */
-class ApplicationsGapicClient
+abstract class ApplicationsBaseClient
 {
     use GapicClientTrait;
 
     /** The name of the service. */
-    const SERVICE_NAME = 'google.appengine.v1.Applications';
+    private const SERVICE_NAME = 'google.appengine.v1.Applications';
 
     /** The default address of the service. */
-    const SERVICE_ADDRESS = 'appengine.googleapis.com';
+    private const SERVICE_ADDRESS = 'appengine.googleapis.com';
 
     /** The default port of the service. */
-    const DEFAULT_SERVICE_PORT = 443;
+    private const DEFAULT_SERVICE_PORT = 443;
 
     /** The name of the code generator, to be included in the agent header. */
-    const CODEGEN_NAME = 'gapic';
+    private const CODEGEN_NAME = 'gapic';
 
     /** The default scopes required by the service. */
     public static $serviceScopes = [
@@ -112,15 +88,15 @@ class ApplicationsGapicClient
         return [
             'serviceName' => self::SERVICE_NAME,
             'apiEndpoint' => self::SERVICE_ADDRESS . ':' . self::DEFAULT_SERVICE_PORT,
-            'clientConfig' => __DIR__ . '/../resources/applications_client_config.json',
-            'descriptorsConfigPath' => __DIR__ . '/../resources/applications_descriptor_config.php',
-            'gcpApiConfigPath' => __DIR__ . '/../resources/applications_grpc_config.json',
+            'clientConfig' => __DIR__ . '/../../resources/applications_client_config.json',
+            'descriptorsConfigPath' => __DIR__ . '/../../resources/applications_descriptor_config.php',
+            'gcpApiConfigPath' => __DIR__ . '/../../resources/applications_grpc_config.json',
             'credentialsConfig' => [
                 'defaultScopes' => self::$serviceScopes,
             ],
             'transportConfig' => [
                 'rest' => [
-                    'restClientConfigPath' => __DIR__ . '/../resources/applications_rest_client_config.php',
+                    'restClientConfigPath' => __DIR__ . '/../../resources/applications_rest_client_config.php',
                 ],
             ],
         ];
@@ -216,6 +192,17 @@ class ApplicationsGapicClient
         $this->operationsClient = $this->createOperationsClient($clientOptions);
     }
 
+    /** Handles execution of the async variants for each documented method. */
+    public function __call($method, $args)
+    {
+        if (substr($method, -5) !== 'Async') {
+            trigger_error('Call to undefined method ' . __CLASS__ . "::$method()", E_USER_ERROR);
+        }
+
+        array_unshift($args, substr($method, 0, -5));
+        return call_user_func_array([$this, 'startAsyncCall'], $args);
+    }
+
     /**
      * Creates an App Engine application for a Google Cloud Platform project.
      * Required fields:
@@ -225,106 +212,49 @@ class ApplicationsGapicClient
      *
      * For more information about App Engine applications, see [Managing Projects, Applications, and Billing](https://cloud.google.com/appengine/docs/standard/python/console/).
      *
-     * Sample code:
-     * ```
-     * $applicationsClient = new ApplicationsClient();
-     * try {
-     *     $operationResponse = $applicationsClient->createApplication();
-     *     $operationResponse->pollUntilComplete();
-     *     if ($operationResponse->operationSucceeded()) {
-     *         $result = $operationResponse->getResult();
-     *         // doSomethingWith($result)
-     *     } else {
-     *         $error = $operationResponse->getError();
-     *         // handleError($error)
-     *     }
-     *     // Alternatively:
-     *     // start the operation, keep the operation name, and resume later
-     *     $operationResponse = $applicationsClient->createApplication();
-     *     $operationName = $operationResponse->getName();
-     *     // ... do other work
-     *     $newOperationResponse = $applicationsClient->resumeOperation($operationName, 'createApplication');
-     *     while (!$newOperationResponse->isDone()) {
-     *         // ... do other work
-     *         $newOperationResponse->reload();
-     *     }
-     *     if ($newOperationResponse->operationSucceeded()) {
-     *         $result = $newOperationResponse->getResult();
-     *         // doSomethingWith($result)
-     *     } else {
-     *         $error = $newOperationResponse->getError();
-     *         // handleError($error)
-     *     }
-     * } finally {
-     *     $applicationsClient->close();
-     * }
-     * ```
+     * The async variant is {@see self::createApplicationAsync()} .
      *
-     * @param array $optionalArgs {
+     * @param CreateApplicationRequest $request     A request to house fields associated with the call.
+     * @param array                    $callOptions {
      *     Optional.
      *
-     *     @type Application $application
-     *           Application configuration.
      *     @type RetrySettings|array $retrySettings
      *           Retry settings to use for this call. Can be a {@see RetrySettings} object, or an
      *           associative array of retry settings parameters. See the documentation on
      *           {@see RetrySettings} for example usage.
      * }
      *
-     * @return \Google\ApiCore\OperationResponse
+     * @return OperationResponse
      *
-     * @throws ApiException if the remote call fails
+     * @throws ApiException Thrown if the API call fails.
      */
-    public function createApplication(array $optionalArgs = [])
+    public function createApplication(CreateApplicationRequest $request, array $callOptions = []): OperationResponse
     {
-        $request = new CreateApplicationRequest();
-        if (isset($optionalArgs['application'])) {
-            $request->setApplication($optionalArgs['application']);
-        }
-
-        return $this->startOperationsCall('CreateApplication', $optionalArgs, $request, $this->getOperationsClient())->wait();
+        return $this->startApiCall('CreateApplication', $request, $callOptions)->wait();
     }
 
     /**
      * Gets information about an application.
      *
-     * Sample code:
-     * ```
-     * $applicationsClient = new ApplicationsClient();
-     * try {
-     *     $response = $applicationsClient->getApplication();
-     * } finally {
-     *     $applicationsClient->close();
-     * }
-     * ```
+     * The async variant is {@see self::getApplicationAsync()} .
      *
-     * @param array $optionalArgs {
+     * @param GetApplicationRequest $request     A request to house fields associated with the call.
+     * @param array                 $callOptions {
      *     Optional.
      *
-     *     @type string $name
-     *           Name of the Application resource to get. Example: `apps/myapp`.
      *     @type RetrySettings|array $retrySettings
      *           Retry settings to use for this call. Can be a {@see RetrySettings} object, or an
      *           associative array of retry settings parameters. See the documentation on
      *           {@see RetrySettings} for example usage.
      * }
      *
-     * @return \Google\Cloud\AppEngine\V1\Application
+     * @return Application
      *
-     * @throws ApiException if the remote call fails
+     * @throws ApiException Thrown if the API call fails.
      */
-    public function getApplication(array $optionalArgs = [])
+    public function getApplication(GetApplicationRequest $request, array $callOptions = []): Application
     {
-        $request = new GetApplicationRequest();
-        $requestParamHeaders = [];
-        if (isset($optionalArgs['name'])) {
-            $request->setName($optionalArgs['name']);
-            $requestParamHeaders['name'] = $optionalArgs['name'];
-        }
-
-        $requestParams = new RequestParamsHeaderDescriptor($requestParamHeaders);
-        $optionalArgs['headers'] = isset($optionalArgs['headers']) ? array_merge($requestParams->getHeader(), $optionalArgs['headers']) : $requestParams->getHeader();
-        return $this->startCall('GetApplication', Application::class, $optionalArgs, $request)->wait();
+        return $this->startApiCall('GetApplication', $request, $callOptions)->wait();
     }
 
     /**
@@ -339,68 +269,25 @@ class ApplicationsGapicClient
      * If the deletion was recent, the numeric ID can be found in the Cloud
      * Console Activity Log.
      *
-     * Sample code:
-     * ```
-     * $applicationsClient = new ApplicationsClient();
-     * try {
-     *     $operationResponse = $applicationsClient->repairApplication();
-     *     $operationResponse->pollUntilComplete();
-     *     if ($operationResponse->operationSucceeded()) {
-     *         $result = $operationResponse->getResult();
-     *         // doSomethingWith($result)
-     *     } else {
-     *         $error = $operationResponse->getError();
-     *         // handleError($error)
-     *     }
-     *     // Alternatively:
-     *     // start the operation, keep the operation name, and resume later
-     *     $operationResponse = $applicationsClient->repairApplication();
-     *     $operationName = $operationResponse->getName();
-     *     // ... do other work
-     *     $newOperationResponse = $applicationsClient->resumeOperation($operationName, 'repairApplication');
-     *     while (!$newOperationResponse->isDone()) {
-     *         // ... do other work
-     *         $newOperationResponse->reload();
-     *     }
-     *     if ($newOperationResponse->operationSucceeded()) {
-     *         $result = $newOperationResponse->getResult();
-     *         // doSomethingWith($result)
-     *     } else {
-     *         $error = $newOperationResponse->getError();
-     *         // handleError($error)
-     *     }
-     * } finally {
-     *     $applicationsClient->close();
-     * }
-     * ```
+     * The async variant is {@see self::repairApplicationAsync()} .
      *
-     * @param array $optionalArgs {
+     * @param RepairApplicationRequest $request     A request to house fields associated with the call.
+     * @param array                    $callOptions {
      *     Optional.
      *
-     *     @type string $name
-     *           Name of the application to repair. Example: `apps/myapp`
      *     @type RetrySettings|array $retrySettings
      *           Retry settings to use for this call. Can be a {@see RetrySettings} object, or an
      *           associative array of retry settings parameters. See the documentation on
      *           {@see RetrySettings} for example usage.
      * }
      *
-     * @return \Google\ApiCore\OperationResponse
+     * @return OperationResponse
      *
-     * @throws ApiException if the remote call fails
+     * @throws ApiException Thrown if the API call fails.
      */
-    public function repairApplication(array $optionalArgs = [])
+    public function repairApplication(RepairApplicationRequest $request, array $callOptions = []): OperationResponse
     {
-        $request = new RepairApplicationRequest();
-        $requestParamHeaders = [];
-        if (isset($optionalArgs['name'])) {
-            $request->setName($optionalArgs['name']);
-            $requestParamHeaders['name'] = $optionalArgs['name'];
-        }
-
-        $requestParams = new RequestParamsHeaderDescriptor($requestParamHeaders);
-        $optionalArgs['headers'] = isset($optionalArgs['headers']) ? array_merge($requestParams->getHeader(), $optionalArgs['headers']) : $requestParams->getHeader();
-        return $this->startOperationsCall('RepairApplication', $optionalArgs, $request, $this->getOperationsClient())->wait();
+        return $this->startApiCall('RepairApplication', $request, $callOptions)->wait();
     }
 
     /**
@@ -411,79 +298,24 @@ class ApplicationsGapicClient
      * * `default_cookie_expiration` - Cookie expiration policy for the application.
      * * `iap` - Identity-Aware Proxy properties for the application.
      *
-     * Sample code:
-     * ```
-     * $applicationsClient = new ApplicationsClient();
-     * try {
-     *     $operationResponse = $applicationsClient->updateApplication();
-     *     $operationResponse->pollUntilComplete();
-     *     if ($operationResponse->operationSucceeded()) {
-     *         $result = $operationResponse->getResult();
-     *         // doSomethingWith($result)
-     *     } else {
-     *         $error = $operationResponse->getError();
-     *         // handleError($error)
-     *     }
-     *     // Alternatively:
-     *     // start the operation, keep the operation name, and resume later
-     *     $operationResponse = $applicationsClient->updateApplication();
-     *     $operationName = $operationResponse->getName();
-     *     // ... do other work
-     *     $newOperationResponse = $applicationsClient->resumeOperation($operationName, 'updateApplication');
-     *     while (!$newOperationResponse->isDone()) {
-     *         // ... do other work
-     *         $newOperationResponse->reload();
-     *     }
-     *     if ($newOperationResponse->operationSucceeded()) {
-     *         $result = $newOperationResponse->getResult();
-     *         // doSomethingWith($result)
-     *     } else {
-     *         $error = $newOperationResponse->getError();
-     *         // handleError($error)
-     *     }
-     * } finally {
-     *     $applicationsClient->close();
-     * }
-     * ```
+     * The async variant is {@see self::updateApplicationAsync()} .
      *
-     * @param array $optionalArgs {
+     * @param UpdateApplicationRequest $request     A request to house fields associated with the call.
+     * @param array                    $callOptions {
      *     Optional.
      *
-     *     @type string $name
-     *           Name of the Application resource to update. Example: `apps/myapp`.
-     *     @type Application $application
-     *           An Application containing the updated resource.
-     *     @type FieldMask $updateMask
-     *           Required. Standard field mask for the set of fields to be updated.
      *     @type RetrySettings|array $retrySettings
      *           Retry settings to use for this call. Can be a {@see RetrySettings} object, or an
      *           associative array of retry settings parameters. See the documentation on
      *           {@see RetrySettings} for example usage.
      * }
      *
-     * @return \Google\ApiCore\OperationResponse
+     * @return OperationResponse
      *
-     * @throws ApiException if the remote call fails
+     * @throws ApiException Thrown if the API call fails.
      */
-    public function updateApplication(array $optionalArgs = [])
+    public function updateApplication(UpdateApplicationRequest $request, array $callOptions = []): OperationResponse
     {
-        $request = new UpdateApplicationRequest();
-        $requestParamHeaders = [];
-        if (isset($optionalArgs['name'])) {
-            $request->setName($optionalArgs['name']);
-            $requestParamHeaders['name'] = $optionalArgs['name'];
-        }
-
-        if (isset($optionalArgs['application'])) {
-            $request->setApplication($optionalArgs['application']);
-        }
-
-        if (isset($optionalArgs['updateMask'])) {
-            $request->setUpdateMask($optionalArgs['updateMask']);
-        }
-
-        $requestParams = new RequestParamsHeaderDescriptor($requestParamHeaders);
-        $optionalArgs['headers'] = isset($optionalArgs['headers']) ? array_merge($requestParams->getHeader(), $optionalArgs['headers']) : $requestParams->getHeader();
-        return $this->startOperationsCall('UpdateApplication', $optionalArgs, $request, $this->getOperationsClient())->wait();
+        return $this->startApiCall('UpdateApplication', $request, $callOptions)->wait();
     }
 }
